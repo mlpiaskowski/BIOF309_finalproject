@@ -1,0 +1,150 @@
+{\rtf1\ansi\ansicpg1252\cocoartf1671\cocoasubrtf600
+{\fonttbl\f0\fswiss\fcharset0 Helvetica;}
+{\colortbl;\red255\green255\blue255;}
+{\*\expandedcolortbl;;}
+\margl1440\margr1440\vieww10800\viewh8400\viewkind0
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+
+\f0\fs24 \cf0 # Import csv file table as a pandas dataframe\
+import pandas as pd\
+input_data = pd.read_csv("cnv_results_final.csv", sep='\\t', index_col=0)\
+\
+# Initialize variables, for appending later\
+Match_list = []\
+VBS_list = []\
+BKLT_VBS_count = 0\
+EBNA1_VBS_count = 0\
+HPVE1_VBS_count = 0\
+HPVE2_VBS_count = 0\
+Scatter_VBS = []\
+Scatter_CNV = []\
+\
+# Establish degenerate virus regex sequences as variables\
+import re\
+\
+BK_LT = re.compile(r"G[AG]GGC[ATCG]\{1,30\}GCC[CT]C")\
+EBNA1 = re.compile(r"G[AG]TAGC[ATCG]\{4\}GCTA[CT]C")\
+HPV_E1 = re.compile(r"AT[AGT]G[CT]\{2\}[ATCG]\{3\}[AG]\{2\}C[ACT]AT")\
+HPV_E2 = re.compile(r"ACCG[ATCG]\{4\}CGGT")\
+\
+# Find virus sequences in input_sequence with re.finditer\
+for index, row in input_data.iterrows():\
+    #Reset list of CNV VBSs for each new CNV and label with new CNV name\
+    CNV_VBS = []\
+    CNV_VBS.append(row["GDC_Aliquot"])\
+    #Reset VBS counts for each new CNV\
+    BKLT_VBS_count = 0\
+    EBNA1_VBS_count = 0\
+    HPVE1_VBS_count = 0\
+    HPVE2_VBS_count = 0\
+    \
+###\
+    BK_iter = BK_LT.finditer(row["Sequence"])\
+    if BK_iter:\
+        for match in BK_iter:\
+            #Assembling match list\
+            temp_match_list = []\
+            temp_match_list.append(row["GDC_Aliquot"])\
+            temp_match_list.append("BK Polyomavirus Large T Anitgen")\
+            temp_match_list.append(match.start()+1)\
+            temp_match_list.append(match.end()+1)\
+            temp_match_list.append(match.group())\
+            Match_list.append(temp_match_list)\
+            \
+            #Adding 1 to numerator of VBS count for each CNV every time a match is found\
+            BKLT_VBS_count += 1\
+    #Adding total BK VBS to list of VBSs for this CNV\
+    CNV_VBS.append(BKLT_VBS_count/(row["Length"]/1000))\
+    \
+    #Adding VBS values to lists for scatter plot\
+    Scatter_VBS.append(BKLT_VBS_count/(row["Length"]/1000))\
+    Scatter_CNV.append(row["Segment_Mean"])\
+    \
+###\
+    EBNA1_iter = EBNA1.finditer(row["Sequence"])\
+    if EBNA1_iter:\
+        for match in EBNA1_iter:\
+            #Assembling match list\
+            temp_match_list = []\
+            temp_match_list.append(row["GDC_Aliquot"])\
+            temp_match_list.append("Epstein\'96Barr Virus Nuclear Antigen 1")\
+            temp_match_list.append(match.start()+1)\
+            temp_match_list.append(match.end()+1)\
+            temp_match_list.append(match.group())\
+            Match_list.append(temp_match_list)\
+            \
+            #Adding 1 to numerator of VBS count for every CNV found\
+            EBNA1_VBS_count += 1\
+    #Adding total BK VBS to list of VBSs for this CNV\
+    CNV_VBS.append(EBNA1_VBS_count/(row["Length"]/1000))\
+    \
+    #Adding VBS values to lists for scatter plot\
+    Scatter_VBS.append(EBNA1_VBS_count/(row["Length"]/1000))\
+    Scatter_CNV.append(row["Segment_Mean"])\
+        \
+###\
+    HPVE1_iter = HPV_E1.finditer(row["Sequence"])\
+    if HPVE1_iter:\
+        for match in HPVE1_iter:\
+            #Assembling match list\
+            temp_match_list = []\
+            temp_match_list.append(row["GDC_Aliquot"])\
+            temp_match_list.append("Human Papillomavirus E1 Protein")\
+            temp_match_list.append(match.start()+1)\
+            temp_match_list.append(match.end()+1)\
+            temp_match_list.append(match.group())\
+            Match_list.append(temp_match_list)\
+            \
+            #Adding 1 to numerator of VBS count for every CNV found\
+            HPVE1_VBS_count += 1\
+    #Adding total BK VBS to list of VBSs for this CNV\
+    CNV_VBS.append(HPVE1_VBS_count/(row["Length"]/1000))\
+    \
+    #Adding VBS values to lists for scatter plot\
+    Scatter_VBS.append(HPVE1_VBS_count/(row["Length"]/1000))\
+    Scatter_CNV.append(row["Segment_Mean"])\
+        \
+###\
+    HPVE2_iter = HPV_E2.finditer(row["Sequence"])\
+    if HPVE2_iter:\
+        for match in HPVE2_iter:\
+            #Assembling match list\
+            temp_match_list = []\
+            temp_match_list.append(row["GDC_Aliquot"])\
+            temp_match_list.append("Human Papillomavirus E2 Protein")\
+            temp_match_list.append(match.start()+1)\
+            temp_match_list.append(match.end()+1)\
+            temp_match_list.append(match.group())\
+            Match_list.append(temp_match_list)\
+            \
+            #Adding 1 to numerator of VBS count for every CNV found\
+            HPVE2_VBS_count += 1\
+    #Adding total BK VBS to list of VBSs for this CNV\
+    CNV_VBS.append(HPVE2_VBS_count/(row["Length"]/1000))\
+    \
+    #Adding VBS values to lists for scatter plot\
+    Scatter_VBS.append(HPVE2_VBS_count/(row["Length"]/1000))\
+    Scatter_CNV.append(row["Segment_Mean"])\
+        \
+###\
+    #Adding list of all VBSs for this CNV to the list of lists before moving to next row/CNV\
+    VBS_list.append(CNV_VBS)\
+\
+# Turn match list of lists into pandas dataframe and output CSV file\
+CNV_virus_match_table = pd.DataFrame(Match_list, columns=["CNV_ID","Viral_Protein","Loci_Start", "Loci_End", "Viral_Sequence"])\
+CNV_virus_match_table.style.set_caption("Viral Protein Sequences within Copy Number Variation Sequences")\
+print(CNV_virus_match_table)\
+CNV_virus_match_table.to_csv('Summary_of_CNV_virus_matches.csv', sep='\\t')\
+\
+# Turn VBS list of lists into a pandas dataframe and print\
+VBS_table = pd.DataFrame(VBS_list, columns=["CNV_ID", "BKPyV_LT", "EBNA1", "HPV_E1", "HPV_E2"])\
+VBS_table.style.set_caption("Virus Binding Scores")\
+print(VBS_table)\
+\
+# Create and print out scatter plot\
+import matplotlib.pyplot as plt\
+plt.scatter(Scatter_CNV, Scatter_VBS)\
+plt.title("Virus Binding Score Correlates to CNV Intensity")\
+plt.xlabel("CNV Intensity")\
+plt.ylabel("Virus Binding Score")\
+plt.show()}
