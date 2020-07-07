@@ -7,7 +7,7 @@
 
 \f0\fs24 \cf0 # Import csv file table as a pandas dataframe\
 import pandas as pd\
-input_data = pd.read_csv("cnv_results_final.csv", sep='\\t', index_col=0)\
+input_data = pd.read_csv("cnv_results_read.csv", sep='\\t', index_col=0)\
 \
 # Initialize variables, for appending later\
 Match_list = []\
@@ -16,8 +16,6 @@ BKLT_VBS_count = 0\
 EBNA1_VBS_count = 0\
 HPVE1_VBS_count = 0\
 HPVE2_VBS_count = 0\
-Scatter_VBS = []\
-Scatter_CNV = []\
 \
 # Establish degenerate virus regex sequences as variables\
 import re\
@@ -32,6 +30,8 @@ for index, row in input_data.iterrows():\
     #Reset list of CNV VBSs for each new CNV and label with new CNV name\
     CNV_VBS = []\
     CNV_VBS.append(row["GDC_Aliquot"])\
+    CNV_VBS.append(row["Segment_Mean"])\
+    CNV_VBS.append(row["Length"])\
     #Reset VBS counts for each new CNV\
     BKLT_VBS_count = 0\
     EBNA1_VBS_count = 0\
@@ -56,10 +56,6 @@ for index, row in input_data.iterrows():\
     #Adding total BK VBS to list of VBSs for this CNV\
     CNV_VBS.append(BKLT_VBS_count/(row["Length"]/1000))\
     \
-    #Adding VBS values to lists for scatter plot\
-    Scatter_VBS.append(BKLT_VBS_count/(row["Length"]/1000))\
-    Scatter_CNV.append(row["Segment_Mean"])\
-    \
 ###\
     EBNA1_iter = EBNA1.finditer(row["Sequence"])\
     if EBNA1_iter:\
@@ -77,10 +73,6 @@ for index, row in input_data.iterrows():\
             EBNA1_VBS_count += 1\
     #Adding total BK VBS to list of VBSs for this CNV\
     CNV_VBS.append(EBNA1_VBS_count/(row["Length"]/1000))\
-    \
-    #Adding VBS values to lists for scatter plot\
-    Scatter_VBS.append(EBNA1_VBS_count/(row["Length"]/1000))\
-    Scatter_CNV.append(row["Segment_Mean"])\
         \
 ###\
     HPVE1_iter = HPV_E1.finditer(row["Sequence"])\
@@ -99,10 +91,6 @@ for index, row in input_data.iterrows():\
             HPVE1_VBS_count += 1\
     #Adding total BK VBS to list of VBSs for this CNV\
     CNV_VBS.append(HPVE1_VBS_count/(row["Length"]/1000))\
-    \
-    #Adding VBS values to lists for scatter plot\
-    Scatter_VBS.append(HPVE1_VBS_count/(row["Length"]/1000))\
-    Scatter_CNV.append(row["Segment_Mean"])\
         \
 ###\
     HPVE2_iter = HPV_E2.finditer(row["Sequence"])\
@@ -121,11 +109,7 @@ for index, row in input_data.iterrows():\
             HPVE2_VBS_count += 1\
     #Adding total BK VBS to list of VBSs for this CNV\
     CNV_VBS.append(HPVE2_VBS_count/(row["Length"]/1000))\
-    \
-    #Adding VBS values to lists for scatter plot\
-    Scatter_VBS.append(HPVE2_VBS_count/(row["Length"]/1000))\
-    Scatter_CNV.append(row["Segment_Mean"])\
-        \
+\
 ###\
     #Adding list of all VBSs for this CNV to the list of lists before moving to next row/CNV\
     VBS_list.append(CNV_VBS)\
@@ -134,17 +118,48 @@ for index, row in input_data.iterrows():\
 CNV_virus_match_table = pd.DataFrame(Match_list, columns=["CNV_ID","Viral_Protein","Loci_Start", "Loci_End", "Viral_Sequence"])\
 CNV_virus_match_table.style.set_caption("Viral Protein Sequences within Copy Number Variation Sequences")\
 print(CNV_virus_match_table)\
-CNV_virus_match_table.to_csv('Summary_of_CNV_virus_matches.csv', sep='\\t')\
+CNV_virus_match_table.to_csv('READ_virus_match_summary.csv', sep='\\t')\
 \
 # Turn VBS list of lists into a pandas dataframe and print\
-VBS_table = pd.DataFrame(VBS_list, columns=["CNV_ID", "BKPyV_LT", "EBNA1", "HPV_E1", "HPV_E2"])\
+VBS_table = pd.DataFrame(VBS_list, columns=["CNV_ID", "CNV_Intensity", "CNV_Size", "BKPyV_LT", "EBNA1", "HPV_E1", "HPV_E2"])\
 VBS_table.style.set_caption("Virus Binding Scores")\
 print(VBS_table)\
 \
-# Create and print out scatter plot\
+# Slice VBS dataframe and make trellis scatter plots using CNV intensity\
 import matplotlib.pyplot as plt\
-plt.scatter(Scatter_CNV, Scatter_VBS)\
-plt.title("Virus Binding Score Correlates to CNV Intensity")\
-plt.xlabel("CNV Intensity")\
-plt.ylabel("Virus Binding Score")\
-plt.show()}
+\
+fig, intensity_trellis = plt.subplots(nrows=2, ncols=2, figsize = (8,8), sharex=True)\
+\
+intensity_trellis[0][0].scatter(VBS_table["CNV_Intensity"], VBS_table["BKPyV_LT"], color="DarkBlue")\
+intensity_trellis[0][1].scatter(VBS_table["CNV_Intensity"], VBS_table["EBNA1"], color="DarkGreen")\
+intensity_trellis[1][0].scatter(VBS_table["CNV_Intensity"], VBS_table["HPV_E1"], color="DarkOrange")\
+intensity_trellis[1][1].scatter(VBS_table["CNV_Intensity"], VBS_table["HPV_E2"], color="DarkRed")\
+\
+intensity_trellis[0][0].set_title("BKPyV LT")\
+intensity_trellis[0][1].set_title("EBNA1")\
+intensity_trellis[1][0].set_title("HPV E1")\
+intensity_trellis[1][1].set_title("HPV E2")\
+\
+intensity_trellis[1][0].set_xlabel("CNV Intensity")\
+intensity_trellis[1][1].set_xlabel("CNV Intensity")\
+intensity_trellis[0][0].set_ylabel("Virus Binding Score")\
+intensity_trellis[1][0].set_ylabel("Virus Binding Score")\
+\
+# Slice VBS dataframe and make trellis scatter plots using CNV size\
+\
+fig, size_trellis = plt.subplots(nrows=2, ncols=2, figsize = (8,8), sharex=True)\
+\
+size_trellis[0][0].scatter(VBS_table["CNV_Size"], VBS_table["BKPyV_LT"], color="DarkBlue")\
+size_trellis[0][1].scatter(VBS_table["CNV_Size"], VBS_table["EBNA1"], color="DarkGreen")\
+size_trellis[1][0].scatter(VBS_table["CNV_Size"], VBS_table["HPV_E1"], color="DarkOrange")\
+size_trellis[1][1].scatter(VBS_table["CNV_Size"], VBS_table["HPV_E2"], color="DarkRed")\
+\
+size_trellis[0][0].set_title("BKPyV LT")\
+size_trellis[0][1].set_title("EBNA1")\
+size_trellis[1][0].set_title("HPV E1")\
+size_trellis[1][1].set_title("HPV E2")\
+\
+size_trellis[1][0].set_xlabel("CNV Size (bp)")\
+size_trellis[1][1].set_xlabel("CNV Size (bp)")\
+size_trellis[0][0].set_ylabel("Virus Binding Score")\
+size_trellis[1][0].set_ylabel("Virus Binding Score")}
